@@ -4,9 +4,11 @@ import com.parkit.parkingsystem.config.DataBaseConfig;
 import com.parkit.parkingsystem.constants.DBConstants;
 import com.parkit.parkingsystem.constants.ParkingType;
 import com.parkit.parkingsystem.model.ParkingSpot;
+
 import com.parkit.parkingsystem.model.Ticket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,6 +16,8 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 
 public class TicketDAO {
+
+   
 
     private static final Logger logger = LogManager.getLogger("TicketDAO");
 
@@ -85,5 +89,59 @@ public class TicketDAO {
             dataBaseConfig.closeConnection(con);
         }
         return false;
+    }
+
+    public Boolean getDiscount(String vehicleNumbReg){ 
+
+        Connection con = null;
+        Boolean found = false;
+
+        try {
+            
+            con = dataBaseConfig.getConnection();
+            PreparedStatement ps = con.prepareStatement(DBConstants.GET_DISCOUNT);
+            ps.setString(1, vehicleNumbReg);      
+            ResultSet rs = ps.executeQuery();        
+
+            if(rs.next()){
+                rs.getInt(1);
+                found = true;
+            }
+
+            dataBaseConfig.closeResultSet(rs);
+            dataBaseConfig.closePreparedStatement(ps);
+        }catch (Exception ex){
+            logger.error("Error fetching next available slot",ex);
+        }finally {
+            dataBaseConfig.closeConnection(con);
+            return found;
+        }
+    }
+    public Integer getNbTicket(String vehicleNumbReg){ 
+        Connection con = null; 
+        Integer nbTicket = 0;
+
+        try {
+            
+            con = dataBaseConfig.getConnection();
+            PreparedStatement ps = con.prepareStatement(DBConstants.GET_NB_TICKET);
+            ps.setString(1, vehicleNumbReg);   
+            ResultSet rs = ps.executeQuery();        
+
+            if(rs.next()){
+                rs.getInt(1);
+                nbTicket++;
+            }
+
+            dataBaseConfig.closeResultSet(rs);
+            dataBaseConfig.closePreparedStatement(ps);
+        }catch (Exception ex){
+            logger.error("Error fetching next available slot",ex);
+        }finally {
+            dataBaseConfig.closeConnection(con);
+            return nbTicket;
+        }
+
+
     }
 }
