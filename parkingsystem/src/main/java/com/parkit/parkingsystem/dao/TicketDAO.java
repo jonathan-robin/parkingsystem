@@ -86,4 +86,34 @@ public class TicketDAO {
         }
         return false;
     }
+    
+    @SuppressWarnings("finally")
+	public Ticket applyFivePercentOff(Ticket ticket) {
+    	
+    	String vehicleRegNumber = ticket.getVehicleRegNumber();
+    	int TicketId = ticket.getId();
+    	
+        Connection con = null;
+        try {
+            con = dataBaseConfig.getConnection();
+            PreparedStatement ps = con.prepareStatement(DBConstants.GET_USER);
+            ps.setString(1,vehicleRegNumber);
+            ps.setInt(2, TicketId);
+            ResultSet rs = ps.executeQuery();
+            
+            if(rs.next()) {
+            	logger.debug("apply 5%");
+            	ticket.setPrice(ticket.getPrice() - ticket.getPrice() / 0.05 );
+            }
+            
+            dataBaseConfig.closeResultSet(rs);
+            dataBaseConfig.closePreparedStatement(ps);
+        }catch (Exception ex){
+            logger.error("Error fetching next available slot",ex);
+        }finally {
+            dataBaseConfig.closeConnection(con);
+            return ticket;
+        }
+    }
+    
 }

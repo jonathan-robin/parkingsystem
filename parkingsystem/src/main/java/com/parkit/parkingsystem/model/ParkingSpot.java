@@ -37,4 +37,9 @@ public class ParkingSpot {
         isAvailable = available;
     }
 
+	@Override
+	public String toString() {
+		return "ParkingSpot [number=" + number + ", parkingType=" + parkingType + ", isAvailable=" + isAvailable + "]";
+	}
+
 }

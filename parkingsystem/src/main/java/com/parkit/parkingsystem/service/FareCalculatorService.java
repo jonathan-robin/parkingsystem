@@ -1,28 +1,42 @@
 package com.parkit.parkingsystem.service;
 
+
+import java.util.concurrent.TimeUnit;
+
+import org.apache.logging.log4j.*;
+
 import com.parkit.parkingsystem.constants.Fare;
+import com.parkit.parkingsystem.dao.TicketDAO;
 import com.parkit.parkingsystem.model.Ticket;
 
 public class FareCalculatorService {
 
+	//Logger logger = LoggerManager.getLogger(FareCalculatorService.class);
+	private static final Logger LOGGER = LogManager.getLogger();
+	
+	TicketDAO ticketDAO = new TicketDAO();
+	
     public void calculateFare(Ticket ticket){
         if( (ticket.getOutTime() == null) || (ticket.getOutTime().before(ticket.getInTime())) ){
             throw new IllegalArgumentException("Out time provided is incorrect:"+ticket.getOutTime().toString());
         }
 
-        int inMinutes = ticket.getInTime().getMinutes();
-        int outMinutes = ticket.getOutTime().getMinutes();
+        long diff = ticket.getOutTime().getTime() - ticket.getInTime().getTime();
+        long durationInMinutes = TimeUnit.MILLISECONDS.toSeconds(diff) / 60;
+        
+        double durationWithFreeTime = (double) ((durationInMinutes - 30) > 0 ? (durationInMinutes - 30) : 0);
 
-        //TODO: Some tests are failing here. Need to check if this logic is correct
-        int duration = outMinutes - inMinutes - 30;
-
+        /* apply 5% off if customer is found in db */
+        ticket = ticketDAO.applyFivePercentOff(ticket);
+        
         switch (ticket.getParkingSpot().getParkingType()){
             case CAR: {
-                ticket.setPrice(duration * Fare.CAR_RATE_PER_HOUR);
+            	FareCalculatorService.LOGGER.info(durationWithFreeTime / 60 );
+                ticket.setPrice((durationWithFreeTime / 60 ) * Fare.CAR_RATE_PER_HOUR);
                 break;
             }
             case BIKE: {
-                ticket.setPrice(duration * Fare.BIKE_RATE_PER_HOUR);
+                ticket.setPrice((durationWithFreeTime /60) * Fare.BIKE_RATE_PER_HOUR);
                 break;
             }
             default: throw new IllegalArgumentException("Unkown Parking Type");
