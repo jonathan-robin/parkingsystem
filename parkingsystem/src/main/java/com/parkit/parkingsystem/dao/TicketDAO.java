@@ -1,17 +1,18 @@
 package com.parkit.parkingsystem.dao;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.parkit.parkingsystem.config.DataBaseConfig;
 import com.parkit.parkingsystem.constants.DBConstants;
 import com.parkit.parkingsystem.constants.ParkingType;
 import com.parkit.parkingsystem.model.ParkingSpot;
 import com.parkit.parkingsystem.model.Ticket;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Timestamp;
 
 public class TicketDAO {
 
@@ -19,7 +20,8 @@ public class TicketDAO {
 
     public DataBaseConfig dataBaseConfig = new DataBaseConfig();
 
-    public boolean saveTicket(Ticket ticket){
+	@SuppressWarnings("finally")
+	public boolean saveTicket(Ticket ticket) {
         Connection con = null;
         try {
             con = dataBaseConfig.getConnection();
@@ -47,7 +49,9 @@ public class TicketDAO {
             con = dataBaseConfig.getConnection();
             PreparedStatement ps = con.prepareStatement(DBConstants.GET_TICKET);
             //ID, PARKING_NUMBER, VEHICLE_REG_NUMBER, PRICE, IN_TIME, OUT_TIME)
-            ps.setString(1,vehicleRegNumber);
+			ps.setString(1, vehicleRegNumber);
+			logger.info(vehicleRegNumber);
+
             ResultSet rs = ps.executeQuery();
             if(rs.next()){
                 ticket = new Ticket();
@@ -58,15 +62,17 @@ public class TicketDAO {
                 ticket.setPrice(rs.getDouble(3));
                 ticket.setInTime(rs.getTimestamp(4));
                 ticket.setOutTime(rs.getTimestamp(5));
+
             }
             dataBaseConfig.closeResultSet(rs);
             dataBaseConfig.closePreparedStatement(ps);
+
+			return ticket;
         }catch (Exception ex){
+			logger.info(ex);
             logger.error("Error fetching next available slot",ex);
-        }finally {
-            dataBaseConfig.closeConnection(con);
-            return ticket;
         }
+		return ticket;
     }
 
     public boolean updateTicket(Ticket ticket) {
@@ -103,7 +109,7 @@ public class TicketDAO {
             
             if(rs.next()) {
             	logger.debug("apply 5%");
-            	ticket.setPrice(ticket.getPrice() - ticket.getPrice() / 0.05 );
+				ticket.setPrice(ticket.getPrice() * 0.95);
             }
             
             dataBaseConfig.closeResultSet(rs);

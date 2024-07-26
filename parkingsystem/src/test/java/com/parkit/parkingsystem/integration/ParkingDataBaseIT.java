@@ -22,6 +22,7 @@ import com.parkit.parkingsystem.integration.config.DataBaseTestConfig;
 import com.parkit.parkingsystem.integration.service.DataBasePrepareService;
 import com.parkit.parkingsystem.model.ParkingSpot;
 import com.parkit.parkingsystem.model.Ticket;
+import com.parkit.parkingsystem.service.FareCalculatorService;
 import com.parkit.parkingsystem.service.ParkingService;
 import com.parkit.parkingsystem.util.InputReaderUtil;
 
@@ -32,6 +33,7 @@ public class ParkingDataBaseIT {
     private static ParkingSpotDAO parkingSpotDAO;
     private static TicketDAO ticketDAO;
     private static DataBasePrepareService dataBasePrepareService;
+	private static FareCalculatorService fareCalculatorService;
     
     ParkingService mockParking = Mockito.mock(ParkingService.class);
     private static final Logger logger = LogManager.getLogger("ParkingDataBaseIT");
@@ -44,6 +46,7 @@ public class ParkingDataBaseIT {
     private static void setUp() throws Exception{
         parkingSpotDAO = new ParkingSpotDAO();
         ticketDAO = new TicketDAO();
+		fareCalculatorService = new FareCalculatorService();
         parkingSpotDAO.dataBaseConfig = dataBaseTestConfig;
         ticketDAO.dataBaseConfig = dataBaseTestConfig;
         dataBasePrepareService = new DataBasePrepareService();

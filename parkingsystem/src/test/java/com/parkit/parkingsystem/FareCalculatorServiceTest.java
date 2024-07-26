@@ -1,10 +1,9 @@
 package com.parkit.parkingsystem;
 
-import com.parkit.parkingsystem.constants.Fare;
-import com.parkit.parkingsystem.constants.ParkingType;
-import com.parkit.parkingsystem.model.ParkingSpot;
-import com.parkit.parkingsystem.model.Ticket;
-import com.parkit.parkingsystem.service.FareCalculatorService;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Date;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -12,14 +11,20 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.Date;
+import com.parkit.parkingsystem.constants.Fare;
+import com.parkit.parkingsystem.constants.ParkingType;
+import com.parkit.parkingsystem.dao.TicketDAO;
+import com.parkit.parkingsystem.model.ParkingSpot;
+import com.parkit.parkingsystem.model.Ticket;
+import com.parkit.parkingsystem.service.FareCalculatorService;
 
 public class FareCalculatorServiceTest {
 
     private static FareCalculatorService fareCalculatorService;
     private Ticket ticket;
+	private static TicketDAO ticketDAO;
+
+	private static final Logger logger = LogManager.getLogger("FareCalculatorServiceTest");
     
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -30,6 +35,7 @@ public class FareCalculatorServiceTest {
 
     @BeforeEach
     private void setUpPerTest() {
+		ticketDAO = new TicketDAO();
         ticket = new Ticket();
     }
 
@@ -97,7 +103,8 @@ public class FareCalculatorServiceTest {
         ticket.setInTime(inTime);
         ticket.setOutTime(outTime);
         ticket.setParkingSpot(parkingSpot);
-        fareCalculatorService.calculateFare(ticket);
+		fareCalculatorService
+				.calculateFare(ticket); /* with free 30 minutes parking it should give only 1/4 parking fare */
         assertEquals((0.25 * Fare.BIKE_RATE_PER_HOUR), ticket.getPrice() );
     }
 
@@ -112,12 +119,12 @@ public class FareCalculatorServiceTest {
         ticket.setOutTime(outTime);
         ticket.setParkingSpot(parkingSpot);
         fareCalculatorService.calculateFare(ticket);
-        FareCalculatorServiceTest.LOGGER.info(ticket.toString());
-        assertEquals((0.25 * Fare.CAR_RATE_PER_HOUR) , ticket.getPrice());
+		assertEquals((0.25 * Fare.CAR_RATE_PER_HOUR),
+				ticket.getPrice()); /* with free 30 minutes parking it should give only 1/4 parking fare */
     }
 
     @Test
-    public void calculateFareCarWithMoreThanADayParkingTime(){
+	public void calculateFareCarWithMoreThanADayParkingTime() {
         Date inTime = new Date();
         inTime.setTime( System.currentTimeMillis() - (  24 * 60 * 60 * 1000) );//24 hours parking time should give 24 * parking fare per hour
         Date outTime = new Date();
@@ -127,7 +134,40 @@ public class FareCalculatorServiceTest {
         ticket.setOutTime(outTime);
         ticket.setParkingSpot(parkingSpot);
         fareCalculatorService.calculateFare(ticket);
-        assertEquals( (23.5 * Fare.CAR_RATE_PER_HOUR) , ticket.getPrice());
+		assertEquals((23.5 * Fare.CAR_RATE_PER_HOUR),
+				ticket.getPrice()); /* adding 30 minutes free parking -> 23.5 hours */
+
     }
+
+	@Test
+	public void caclculateFareForRecurringUser() {
+
+		/* save a dummy ticket for testing 5% off */
+		Date inTime = new Date();
+		inTime.setTime(System.currentTimeMillis() - (24 * 60 * 60 * 1000));// 24 hours parking time should give 24 * //
+																			// parking fare per hour
+		Date outTime = new Date();
+		ParkingSpot parkingSpot = new ParkingSpot(1, ParkingType.CAR, false);
+		ticket.setInTime(inTime);
+		ticket.setOutTime(outTime);
+		ticket.setParkingSpot(parkingSpot);
+		ticket.setPrice(1);
+		ticket.setVehicleRegNumber("abc");
+
+		ticketDAO.saveTicket(ticket);
+
+		/* new ticket should cost -5% */
+		Ticket _ticket = new Ticket();
+		Date _inTime = new Date();
+		_inTime.setTime(System.currentTimeMillis() - (24 * 60 * 60 * 1000));
+		_ticket.setInTime(_inTime);
+		_ticket.setOutTime(new Date());
+		_ticket.setParkingSpot(parkingSpot);
+		_ticket.setVehicleRegNumber("abc");
+		fareCalculatorService.calculateFare(_ticket);
+		assertEquals((23.5 * Fare.CAR_RATE_PER_HOUR) * 0.95,
+				_ticket.getPrice()); /* adding 30 minutes free parking -> 23.5 hours +5% off */
+
+	}
 
 }

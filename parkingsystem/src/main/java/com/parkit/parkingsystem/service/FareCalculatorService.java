@@ -3,7 +3,8 @@ package com.parkit.parkingsystem.service;
 
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.parkit.parkingsystem.constants.Fare;
 import com.parkit.parkingsystem.dao.TicketDAO;
@@ -24,19 +25,20 @@ public class FareCalculatorService {
         long diff = ticket.getOutTime().getTime() - ticket.getInTime().getTime();
         long durationInMinutes = TimeUnit.MILLISECONDS.toSeconds(diff) / 60;
         
+		/* apply 30 minutes free */
         double durationWithFreeTime = (double) ((durationInMinutes - 30) > 0 ? (durationInMinutes - 30) : 0);
-
-        /* apply 5% off if customer is found in db */
-        ticket = ticketDAO.applyFivePercentOff(ticket);
         
         switch (ticket.getParkingSpot().getParkingType()){
             case CAR: {
-            	FareCalculatorService.LOGGER.info(durationWithFreeTime / 60 );
                 ticket.setPrice((durationWithFreeTime / 60 ) * Fare.CAR_RATE_PER_HOUR);
+				/* apply 5% off if customer is found in db */
+				ticket = ticketDAO.applyFivePercentOff(ticket);
                 break;
             }
             case BIKE: {
-                ticket.setPrice((durationWithFreeTime /60) * Fare.BIKE_RATE_PER_HOUR);
+				ticket.setPrice((durationWithFreeTime / 60) * Fare.BIKE_RATE_PER_HOUR);
+				/* apply 5% off if customer is found in db */
+				ticket = ticketDAO.applyFivePercentOff(ticket);
                 break;
             }
             default: throw new IllegalArgumentException("Unkown Parking Type");
